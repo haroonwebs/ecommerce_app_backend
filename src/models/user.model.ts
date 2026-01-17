@@ -1,0 +1,86 @@
+import mongoose from "mongoose";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+
+const userSchema = new mongoose.Schema(
+  {
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+    fullName: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+    avatar: {
+      type: String,
+      required: true,
+    },
+    coverImage: {
+      type: String,
+    },
+    watchHistory: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Video",
+      },
+    ],
+    password: {
+      type: String,
+      required: [true, "Password is required"],
+    },
+    refreshToken: {
+      type: String,
+    },
+  },
+  { timestamps: true },
+);
+// Hash password before saving the user
+userSchema.pre("save", async function (next: any) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
+});
+
+// Method to compare passwords
+userSchema.methods.comparePassword = async function (passowrd: string) {
+  return await bcrypt.compare(passowrd, this.password);
+};
+
+userSchema.methods.generateAccesstoken = function () {
+  return jwt.sign(
+    {
+      _id: this._id,
+      username: this.username,
+      email: this.email,
+      fullName: this.fullName,
+    },
+    process.env.ACCESS_TOKEN_SECRET as any,
+    { expiresIn: process.env.ACCESS_TOKEN_EXPIRES as any },
+  );
+};
+
+userSchema.methods.generateRefreshToken = function () {
+  return jwt.sign(
+    {
+      _id: this._id,
+    },
+    process.env.REFRESH_TOKEN_SECRET as any,
+    { expiresIn: process.env.REFRESH_TOKEN_EXPIRES as any },
+  );
+};
+
+export const User = mongoose.model("User", userSchema);
