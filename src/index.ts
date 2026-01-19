@@ -14,15 +14,16 @@ app.use(
   cors({
     origin: "*",
     credentials: true,
-  }),
+  })
 );
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static("public"));
 
-app.get("/", (_req, res) => {
-  res.send("Express + TypeScript API running 🚀");
-});
+// import user routes
+import userRouter from "./routes/user.routes";
+
+app.use("/api/v1/users", userRouter);
 
 app.listen(port, () => {
   console.log(`app is running at port ${port}`);
