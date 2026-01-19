@@ -4,10 +4,10 @@ class apiError extends Error {
   success: boolean;
   errors: any;
   constructor(
-    message: string = "Something went wrong",
     statusCode: number,
+    message: string = "Something went wrong",
     errors: [] = [],
-    stack: string = "",
+    stack: string = ""
   ) {
     super(message);
     this.statusCode = statusCode;
