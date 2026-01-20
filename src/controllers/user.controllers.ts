@@ -171,4 +171,43 @@ const RefreshAccessToken = asyncHandler(async (req: Request, res: Response) => {
   }
 });
 
-export { RegisterUser, LoginUser, LogoutUser, RefreshAccessToken };
+const changeUserPassword = asyncHandler(async (req: Request, res: Response) => {
+  const { password, newPassword } = req.body;
+  if (!(password && newPassword)) {
+    throw new apiError(400, "All fields are required");
+  }
+  const user = await User.findById((req as any).user?._id);
+  if (!user) {
+    throw new apiError(400, "invalid password");
+  }
+  const isPasswordValid = await user.comparePassword(password);
+  if (!isPasswordValid) {
+    throw new apiError(400, "invalid password");
+  }
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+  return res
+    .status(200)
+    .json(new apiResponse(200, "Password changed successfully", {}));
+});
+
+const currentUser = asyncHandler(async (req: Request, res: Response) => {
+  return res
+    .status(200)
+    .json(
+      new apiResponse(
+        200,
+        "Current user fetched successfully",
+        (req as any).user
+      )
+    );
+});
+
+export {
+  RegisterUser,
+  LoginUser,
+  LogoutUser,
+  RefreshAccessToken,
+  changeUserPassword,
+  currentUser,
+};
