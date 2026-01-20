@@ -271,6 +271,78 @@ const updateAvatarImage = asyncHandler(async (req: Request, res: Response) => {
     .json(new apiResponse(200, "Avatar Image Updated successfully", user));
 });
 
+const getUserChannelProfile = asyncHandler(
+  async (req: Request, res: Response) => {
+    const { username } = req.params;
+
+    if (!username || typeof username !== "string") {
+      throw new apiError(400, "Username is required");
+    }
+    try {
+      const channel = await User.aggregate([
+        {
+          $match: { username: username.toLowerCase() },
+        },
+        {
+          $lookup: {
+            from: "subscriptions",
+            localField: "_id",
+            foreignField: "channel",
+            as: "subscribers",
+          },
+        },
+        {
+          $lookup: {
+            from: "subscriptions",
+            localField: "_id",
+            foreignField: "subscriber",
+            as: "subscriberTo",
+          },
+        },
+        {
+          $addFields: {
+            subscribersCount: { $size: "$subscribers" },
+            channelSubscribedToCount: { $size: "$subscriberTo" },
+            isSubscribed: {
+              $cond: {
+                if: {
+                  $in: [(req as any).user?._id, "$subscribers.subscriber"],
+                },
+                then: true,
+                else: false,
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            fullName: 1,
+            username: 1,
+            email: 1,
+            avatar: 1,
+            coverImage: 1,
+            subscribersCount: 1,
+            channelSubscribedToCount: 1,
+            isSubscribed: 1,
+          },
+        },
+      ]);
+      if (!channel?.length) {
+        throw new apiError(404, "Channel not found");
+      }
+
+      return res
+        .status(200)
+        .json(new apiResponse(200, "Channel fetched successfully", channel[0]));
+    } catch (error: any) {
+      return res.status(500).json({
+        message: error?.message || "something went wrong",
+        success: false,
+      });
+    }
+  }
+);
+
 export {
   RegisterUser,
   LoginUser,
@@ -281,4 +353,5 @@ export {
   updateUserAccount,
   updateCoverImage,
   updateAvatarImage,
+  getUserChannelProfile,
 };
