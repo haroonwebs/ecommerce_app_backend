@@ -3,6 +3,7 @@ import {
   LoginUser,
   RegisterUser,
   LogoutUser,
+  RefreshAccessToken,
 } from "../controllers/user.controllers";
 import { fileUpload } from "../middlewares/multer.middleware";
 import { authenticateUser } from "../middlewares/auth.middleware";
@@ -25,5 +26,6 @@ router.route("/register").post(
 
 router.route("/login").post(LoginUser);
 router.route("/logout").post(authenticateUser, LogoutUser);
+router.route("/refresh-token").post(RefreshAccessToken);
 
 export default router;

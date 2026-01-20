@@ -5,8 +5,7 @@ import { User } from "../models/user.model";
 import { uploadToCloudinary } from "../utils/cloudinary";
 import { apiResponse } from "../utils/apiResponse";
 import { Types } from "mongoose";
-import console from "node:console";
-
+import jwt, { JwtPayload } from "jsonwebtoken";
 // method to generate access token and refresh token
 const generateAccessAndRefreshTokens = async (UserId: Types.ObjectId) => {
   try {
@@ -126,4 +125,50 @@ const LogoutUser = asyncHandler(async (req: Request, res: Response) => {
     .clearCookie("refreshToken", options)
     .json(new apiResponse(200, "User logged out successfully", {}));
 });
-export { RegisterUser, LoginUser, LogoutUser };
+
+const RefreshAccessToken = asyncHandler(async (req: Request, res: Response) => {
+  const incomingRefreshToken =
+    req.cookies?.refreshToken || req.body?.refreshToken;
+  if (!incomingRefreshToken) {
+    throw new apiError(401, "Refresh Token is expired or Used");
+  }
+  try {
+    // decode refreshToken
+    const decodedToken = jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET as string
+    ) as JwtPayload;
+    if (!decodedToken) {
+      throw new apiError(401, "Refresh Token is Expired: Please Login Again");
+    }
+    const user = await User.findById(decodedToken._id);
+    if (!user) {
+      throw new apiError(401, "Token Not Matched");
+    }
+    if (incomingRefreshToken !== user.refreshToken) {
+      throw new apiError(401, "Invalid Refresh Token");
+    }
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+      user._id
+    );
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, options)
+      .cookie("refreshToken", refreshToken, options)
+      .json(
+        new apiResponse(200, "Access token refreshed successfully", {
+          accessToken,
+          refreshToken,
+        })
+      );
+  } catch (error) {
+    throw new apiError(401, "Invalid Refresh Token");
+  }
+});
+
+export { RegisterUser, LoginUser, LogoutUser, RefreshAccessToken };
