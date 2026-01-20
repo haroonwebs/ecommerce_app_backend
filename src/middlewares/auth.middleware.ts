@@ -9,7 +9,7 @@ export const authenticateUser = asyncHandler(
     const token =
       req.cookies?.accessToken || req.headers?.authorization?.split(" ")[1];
     if (!token) {
-      throw new apiError(401, "Authentication Token is Missing");
+      throw new apiError(401, "Authentication Failed");
     }
 
     const verifyToken = jwt.verify(
@@ -18,7 +18,7 @@ export const authenticateUser = asyncHandler(
     ) as JwtPayload;
 
     if (!verifyToken) {
-      throw new apiError(401, "invalid Authentication Token");
+      throw new apiError(401, "Authentication Token is Missing or Expired");
     }
 
     const user = await User.findById(verifyToken._id).select(
