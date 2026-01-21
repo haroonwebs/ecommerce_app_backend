@@ -4,7 +4,7 @@ import { Request, Response } from "express";
 import { User } from "../models/user.model";
 import { uploadToCloudinary } from "../utils/cloudinary";
 import { apiResponse } from "../utils/apiResponse";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import jwt, { JwtPayload } from "jsonwebtoken";
 // method to generate access token and refresh token
 const generateAccessAndRefreshTokens = async (UserId: Types.ObjectId) => {
@@ -343,6 +343,57 @@ const getUserChannelProfile = asyncHandler(
   }
 );
 
+const getWatchHistory = asyncHandler(async (req: Request, res: Response) => {
+  const user = await User.aggregate([
+    {
+      $match: { _id: new mongoose.Types.ObjectId((req as any).user?._id) },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    fullName: 1,
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
+  return res
+    .status(200)
+    .json(
+      new apiResponse(
+        200,
+        "User watch histroy fetched successfully",
+        user[0].watchHistory
+      )
+    );
+});
+
 export {
   RegisterUser,
   LoginUser,
@@ -354,4 +405,5 @@ export {
   updateCoverImage,
   updateAvatarImage,
   getUserChannelProfile,
+  getWatchHistory,
 };
