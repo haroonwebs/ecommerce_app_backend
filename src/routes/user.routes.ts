@@ -36,9 +36,13 @@ router.route("/logout").post(authenticateUser, LogoutUser);
 router.route("/refresh-token").post(RefreshAccessToken);
 router.route("/reset-password").post(authenticateUser, changeUserPassword);
 router.route("/current-user").get(authenticateUser, currentUser);
-router.route("/update-account").put(authenticateUser, updateUserAccount);
-router.route("/update-cover-image").put(authenticateUser, updateCoverImage);
-router.route("/update-avatar-image").put(authenticateUser, updateAvatarImage);
+router.route("/update-account").patch(authenticateUser, updateUserAccount);
+router
+  .route("/update-cover-image")
+  .patch(authenticateUser, fileUpload.single("coverImage"), updateCoverImage);
+router
+  .route("/update-avatar-image")
+  .patch(authenticateUser, fileUpload.single("avatar"), updateAvatarImage);
 router.route("/watch-history").get(authenticateUser, getWatchHistory);
 router
   .route("/channel-profile/:username")
