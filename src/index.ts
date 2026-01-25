@@ -22,8 +22,10 @@ app.use(express.static("public"));
 
 // import user routes
 import userRouter from "./routes/user.routes";
+import videoRouter from "./routes/video.routes";
 
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/videos", videoRouter);
 
 app.listen(port, () => {
   console.log(`app is running at port ${port}`);
