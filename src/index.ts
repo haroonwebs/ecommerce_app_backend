@@ -23,6 +23,7 @@ app.use(express.static("public"));
 // import user routes
 import userRouter from "./routes/user.routes";
 import videoRouter from "./routes/video.routes";
+import SubscriptionRouter from "./routes/subscription.route";
 
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/videos", videoRouter);
