@@ -27,6 +27,7 @@ import SubscriptionRouter from "./routes/subscription.route";
 
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/videos", videoRouter);
+app.use("/api/v1/subscriptions", SubscriptionRouter);
 
 app.listen(port, () => {
   console.log(`app is running at port ${port}`);
