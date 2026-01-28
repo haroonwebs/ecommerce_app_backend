@@ -104,6 +104,59 @@ const getUserChannelSubscribers = asyncHandler(
 const getSubscribedChannels = asyncHandler(
   async (req: Request, res: Response) => {
     const { subscriberId } = req.params;
+    const page = Number(req.query?.page) || 1;
+    const limit = Number(req.query?.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    if (!isValidObjectId(subscriberId)) {
+      throw new apiError(401, "subscriber id is not valid");
+    }
+    const channels = await Subscription.aggregate([
+      {
+        $match: {
+          subscriber: new mongoose.Types.ObjectId(subscriberId as string),
+        },
+      },
+      {
+        $facet: {
+          data: [
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: limit },
+            {
+              $lookup: {
+                from: "users",
+                localField: "channel",
+                foreignField: "_id",
+                as: "channel",
+                pipeline: [
+                  {
+                    $project: {
+                      username: 1,
+                      email: 1,
+                      avatar: 1,
+                    },
+                  },
+                ],
+              },
+            },
+            { $unwind: "$channel" },
+          ],
+          totalCount: [{ $count: "count" }],
+        },
+      },
+    ]);
+
+    const totalChannels = channels[0]?.totalCount[0]?.count || 0;
+
+    return res.status(200).json(
+      new apiResponse(200, "Subscribed channels fetched successfully", {
+        totalChannels,
+        currentPage: page,
+        totalPages: Math.ceil(totalChannels / limit),
+        channels: channels[0]?.data || [],
+      })
+    );
   }
 );
 
